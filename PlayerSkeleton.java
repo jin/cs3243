@@ -5,20 +5,20 @@ import java.util.Random;
 import java.util.concurrent.*;
 
 public class PlayerSkeleton {
-
     // Most optimal weights so far
     static double[] BEST_PARTICLE = {9.11, -3.56, 4.15, -8.58, -0.60, 5.42, -6.65, 0.77, -3.52, -0.05, -7.60, -1.98, -1.81, -4.23, 4.34};
 
     // Set this to false to train the model
     // True if using Best Particle
-    boolean isDemo = true;
+    static boolean isDemo = true;
     boolean isExternalEvaluation = false;
     GeneticAlgorithm externalAgent;
+
 	public static final Random randomGenerator = new Random();
 
 	// Swarm details
 
-	private static final int SWARM_SIZE = 100;
+	private static final int SWARM_SIZE = isDemo ? 20 : 100;
 	private static final int GENERATION_COUNT = 10000;
 
 	// Internal PSO parameters. Sort of a temperature control mechanism.
@@ -81,6 +81,7 @@ public class PlayerSkeleton {
 		while (true) {
 			for (int i = 0; i < GENERATION_COUNT; i++) {
 				updateSwarmFitness();
+                System.out.println("");
 				printBest(i);
 
 				double w = calculateSwarmEntropy(i);
@@ -88,6 +89,7 @@ public class PlayerSkeleton {
 				declutterSwarmIfNecessary();
 			}
 			declutterSwarmIfNecessary();
+            System.out.println("");
 		}
 	}
 
@@ -96,6 +98,7 @@ public class PlayerSkeleton {
 	* Also updates personal bests and global best.
 	*/
 	public void updateSwarmFitness() {
+        System.out.println(swarm.length + " particles in this swarm");
 		for (Particle particle : swarm) {
 			// Re-evaluate fitness
 			particle.fitness = Particle.evaluate(particle.location);
@@ -106,10 +109,11 @@ public class PlayerSkeleton {
 				gBest = particle.fitness;
 				System.arraycopy(particle.location, 0, gBestLoc, 0, Particle.FEATURES_COUNT);
 			}
+            System.out.print(".");
 		}
 	}
 
-	/**
+	/**;
 	* Inertia slowly gains less significance. Point for potential customization.
 	*/
 	public double calculateSwarmEntropy(int currGeneration) {
