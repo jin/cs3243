@@ -11,8 +11,9 @@ public class PlayerSkeleton {
     // Set this to false to train the model
     // True if using Best Particle
     static boolean isDemo = true;
-
 	public static final Random randomGenerator = new Random();
+
+	private Context context;
 
 	// Swarm details
 
@@ -37,7 +38,17 @@ public class PlayerSkeleton {
 	}
 
 	public PlayerSkeleton() {
+		context = new Context(new GeneralMove(BEST_PARTICLE));
 		randomizeSwarm();
+	}
+
+	public PlayerSkeleton(Context ctx) {
+		this.context = ctx;
+	}
+
+	public int pickMove(State s, int[][] legalMoves) {
+		int nextMoveIndex = this.context.executeStrategy(s, legalMoves);
+		return nextMoveIndex;
 	}
 
 	public void run() {
@@ -84,7 +95,7 @@ public class PlayerSkeleton {
 	}
 
 	/**
-	* Key point in com.cs3243.strategies.pso.PSO. Moves all particles to the next state.
+	* Key point in PSO. Moves all particles to the next state.
 	*/
 	public void step(double w) {
 		for (Particle particle : swarm) {
@@ -218,50 +229,13 @@ public class PlayerSkeleton {
 		}
 
 		public static double evaluate(double[] weights) {
-			final GeneticAlgorithm player = new GeneticAlgorithm(new Context(new GeneralMove(weights)));
-
-		/*
-		List<CompletableFuture<Integer>> gametests = new ArrayList<>();
-		for (int i = 0; i < 10; i++) {
-			CompletableFuture<Integer> gametest = new CompletableFuture<>();
-			gametests.add(gametest);
-			executor.submit(() -> {
-				State gameState = new State();
-				//PlayerSkeleton.shortRun(gameState, player);
-				PlayerSkeleton.headlessRun(gameState, player);
-				gametest.complete(gameState.getRowsCleared());
-			});
-        }
-
-		try {
-			// .get() waits for the parent CompletableFuture to finish processing.
-			CompletableFuture.allOf(gametests.toArray(new CompletableFuture[10])).get();
-		} catch (InterruptedException | ExecutionException e) {
-			System.out.println("Thread exception encountered!");
-		}
-
-		return gametests.stream().map(gametest -> {
-			try {
-				return gametest.get();
-			} catch (InterruptedException | ExecutionException e) {
-				System.out.println("Thread exception encountered!");
-			}
-			return 0;
-		}).reduce(0, (a, b) -> a + b) / 10.0;*/
-			//List<Future<Integer>> gametests = new ArrayList<>();
+			final PlayerSkeleton player = new PlayerSkeleton(new Context(new GeneralMove(weights)));
 			List<Callable<Integer>> gametests = new ArrayList<>();
 			for (int i = 0; i < 10; i++) {
-			/*gametests.add(executor.submit(new Callable<Integer>() {
-				public Integer call() {
-					State gameState = new State();
-					PlayerSkeleton.headlessRun(gameState, player);
-					return gameState.getRowsCleared();
-				}
-			}));*/
 				gametests.add(new Callable<Integer>() {
 					public Integer call() {
 						State gameState = new State();
-						GeneticAlgorithm.headlessRun(gameState, player);
+						PlayerSkeleton.headlessRun(gameState, player);
 						return gameState.getRowsCleared();
 					}
 				});
@@ -318,19 +292,8 @@ public class PlayerSkeleton {
 			if (s.hasLost()) {
 				return (double)Integer.MIN_VALUE;
 			}
-        /*int[] grades = {
-                aggregateHeight(s),
-                completeLines(s, completedRows),
-                holes(s),
-                bumpiness(s),
-                maxMinDiff(s),
-                columnsWithHoles(s),
-                rowsWithHoles(s),
-                negativeTallestColumnHeight(s)
-        };*/
 			double[] grades = {
 					holes(s),
-					//(aggregateHeight(s) - premoveHeight) / State.COLS,
 					completeLines(s, completedRows),
 					bumpiness(s),
 					s.getWalls(),
@@ -400,7 +363,6 @@ public class PlayerSkeleton {
 				sumOfHeightDifferences += difference;
 			}
 			return -sumOfHeightDifferences;
-			//return 0;
 		}
 
 		// Difference in height between highest and lowest column
@@ -494,267 +456,11 @@ public class PlayerSkeleton {
 		}
 	}
 
-	public class Chromosome {
-
-		private double[] values;
-		private int score;
-
-		public Chromosome(double[] values) {
-			this.values = values;
-			this.score = Integer.MIN_VALUE;
+	public static int headlessRun(State s, PlayerSkeleton p) {
+		while(!s.hasLost()) {
+			s.makeMove(p.pickMove(s, s.legalMoves()));
 		}
-
-		public int getLength() {
-			return this.values.length;
-		}
-
-		public void setValue(int index, double value) {
-			this.values[index] = value;
-		}
-
-		public double getValue(int index) {
-			return this.values[index];
-		}
-
-		public void setScore(int score) { this.score = score; }
-
-		public int getScore() { return this.score; }
-
-		public double fitness(LookaheadState s, int move) {
-			int completedRows = s.getRowsCleared();
-			s.makeMove(move);
-			int[] grades = {
-					aggregateHeight(s),
-					completeLines(s, completedRows),
-					holes(s),
-					bumpiness(s),
-					maxMinDiff(s),
-					columnsWithHoles(s),
-					rowsWithHoles(s),
-					tallestColumnHeight(s),
-					(int) s.getVariation(),
-					s.getWalls(),
-					s.getTop()[0],
-					s.getTop()[1],
-					s.getTop()[2],
-					s.getTop()[3],
-					s.getTop()[4],
-					s.getTop()[5],
-					s.getTop()[6],
-					s.getTop()[7],
-					s.getTop()[8],
-					s.getTop()[9],
-
-			};
-			return aggregate(grades);
-		}
-
-		// Linear summation with weights
-		private double aggregate(int[] grades) {
-			// Should have the same number.
-			assert(grades.length == this.getLength());
-
-			double[] weightedGrades = new double[grades.length];
-			double aggregateSum = 0.0;
-
-			for (int i = 0; i < this.getLength(); i++) {
-				weightedGrades[i] = (double)grades[i] * this.getValue(i);
-				aggregateSum += weightedGrades[i];
-			}
-
-			return aggregateSum;
-		}
-
-		// Genetic crossover
-		public Chromosome crossoverFrom(Chromosome other) {
-			assert(this.getLength() == other.getLength());
-
-			Random rand = new Random();
-			double[] newValues = new double[this.getLength()];
-
-			for (int i = 0; i < this.getLength(); i++) {
-				if (rand.nextFloat() > 0.5) {
-					newValues[i] = this.getValue(i);
-				} else {
-					newValues[i] = other.getValue(i);
-				}
-			}
-
-			return new Chromosome(newValues);
-		}
-
-		// Random mutation
-		public void mutate(double limit) {
-			assert(limit >= 0.0 && limit <= 1.0);
-			Random rand = new Random();
-			if (rand.nextFloat() < limit) {
-				int idx = rand.nextInt(getLength());
-				if (rand.nextFloat() > 0.5) {
-					setValue(idx, rand.nextFloat() * -1);
-				} else {
-					setValue(idx, rand.nextFloat());
-				}
-			}
-		}
-
-		@Override
-		public String toString() {
-			String s = "";
-			for (int i = 0; i < getLength(); i++) {
-				s += getValue(i);
-				s += ", ";
-			}
-			return s;
-		}
-
-		// Grading heuristics
-		// Aggregate Height
-		// Sum of heights of all columns
-		// Goal: MINIMIZE
-		private int aggregateHeight(LookaheadState s) {
-			int height = 0;
-			for (int i = 0; i < s.COLS; i++) {
-				height += s.getTop()[i];
-			}
-			return height;
-		}
-
-		// Complete lines
-		// Goal: MAXIMIZE
-		private int completeLines(LookaheadState s, int current) {
-			return s.getRowsCleared() - current;
-		}
-
-		// Holes (squared)
-		// Goal: MINIMIZE
-		private int holes(LookaheadState s) {
-			int holeCount = 0;
-			for (int col = 0; col < s.COLS; col++) {
-				holeCount += columnHoleCount(s, col);
-			}
-			return (holeCount * holeCount);
-		}
-
-		private int columnHoleCount(LookaheadState s, int col) {
-			int row = 0;
-			int count = 0;
-			int topRow = s.getTop()[col];
-			while (row < topRow) {
-				if (s.getField()[row][col] == 0) {
-					count += 1;
-				}
-				row += 1;
-			}
-			return count;
-		}
-
-		// Bumpiness
-		// Goal: MINIMIZE
-		private int bumpiness(LookaheadState s) {
-			int sumOfHeightDifferences = 0;
-			for (int i = 0; i < s.COLS - 1; i++) {
-				double difference = Math.abs(s.getTop()[i] - s.getTop()[i + 1]);
-				sumOfHeightDifferences += difference;
-			}
-			return sumOfHeightDifferences;
-		}
-
-		// Difference in height between highest and lowest column
-		// Goal: MINIMIZE
-		private int maxMinDiff(LookaheadState s) {
-			return Math.abs(tallestColumnHeight(s) - shortestColumnHeight(s));
-		}
-
-		// Height of tallest column
-		// Goal: MINIMIZE
-		private int tallestColumnHeight(LookaheadState s) {
-			int max = 0;
-			for (int i = 0; i < s.COLS; i++) {
-				int height = s.getTop()[i];
-				if (height > max) {
-					max = height;
-				}
-			}
-
-			return max;
-		}
-
-		private int shortestColumnHeight(LookaheadState s) {
-			int min = s.ROWS;
-			for (int i = 0; i < s.COLS; i++) {
-				int height = s.getTop()[i];
-				if (height < min) {
-					min = height;
-				}
-			}
-
-			return min;
-		}
-
-		// The number of columns with at least one hole
-		// Goal: MINIMIZE
-		private int columnsWithHoles(LookaheadState s) {
-			int columns = 0;
-			for (int col = 0; col < s.COLS; col++) {
-				boolean holeFound = false;
-				for (int row = 0; row < s.getTop()[col]; row++) {
-					if (holeFound) {
-						break;
-					}
-					if (s.getField()[row][col] == 0) {
-						holeFound = true;
-					}
-				}
-				if (holeFound) {
-					columns += 1;
-				}
-			}
-			return columns;
-		}
-
-		// The number of rows with at least one hole.
-		// Goal: MINIMIZE
-		private int rowsWithHoles(LookaheadState s) {
-			int rows = 0;
-			for (int row = 0; row < s.ROWS; row++) {
-				boolean holeFound = true;
-				for (int col = 0; col < s.COLS; col++) {
-					if (holeFound) {
-						break;
-					}
-					if (s.getField()[row][col] == 0 && row < s.getTop()[col]) {
-						holeFound = true;
-					}
-				}
-				if (holeFound) {
-					rows += 1;
-				}
-			}
-			return rows;
-		}
-
-	}
-
-	public static class GeneticAlgorithm {
-
-		private Context context;
-
-		public GeneticAlgorithm(Context context) {
-			this.context = context;
-		}
-
-		public int pickMove(State s, int[][] legalMoves) {
-			int nextMoveIndex = this.context.executeStrategy(s, legalMoves);
-			return nextMoveIndex;
-		}
-
-		public static int headlessRun(State s, GeneticAlgorithm p) {
-			while(!s.hasLost()) {
-				s.makeMove(p.pickMove(s, s.legalMoves()));
-			}
-			return s.getRowsCleared();
-		}
-
+		return s.getRowsCleared();
 	}
 
 	public static class LookaheadState {
