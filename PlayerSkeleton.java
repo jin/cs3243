@@ -27,14 +27,56 @@ public class PlayerSkeleton {
 	public static final double C_G = 0.9; // How much weight we want to give global best.
 
 	private Particle[] swarm = new Particle[SWARM_SIZE];
-	
+
 	private double gBest = -1.0;
 	private double[] gBestLoc = new double[Particle.FEATURES_COUNT];
 
 	public static void main(String[] args) {
-        System.out.println("Running.. this will take a while");
+		if (args.length > 0) {
+			if (args[0].equals("pso")) {
+				PSORun();
+			} else if (args[0].equals("headless")) {
+				headlessRun();
+			} else {
+				graphicalRun();
+			}
+		} else {
+			graphicalRun();
+		}
+	}
+
+	public static void PSORun() {
+		System.out.println("Running.. this will take a while");
 		PlayerSkeleton pso = new PlayerSkeleton();
 		pso.run();
+	}
+
+	public static void graphicalRun() {
+		State s = new State();
+		new TFrame(s);
+		PlayerSkeleton p = new PlayerSkeleton();
+
+		while(!s.hasLost()) {
+			s.makeMove(p.pickMove(s,s.legalMoves()));
+			s.draw();
+			s.drawNext(0,0);
+			try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		System.out.println("You have completed "+s.getRowsCleared()+" rows.");
+	}
+
+	public static void headlessRun() {
+		State s = new State();
+		PlayerSkeleton p = new PlayerSkeleton();
+
+		while(!s.hasLost()) {
+			s.makeMove(p.pickMove(s,s.legalMoves()));
+		}
+		System.out.println("You have completed "+s.getRowsCleared()+" rows.");
 	}
 
 	public PlayerSkeleton() {
