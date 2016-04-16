@@ -32,6 +32,7 @@ public class PlayerSkeleton {
 	private double[] gBestLoc = new double[Particle.FEATURES_COUNT];
 
 	public static void main(String[] args) {
+        System.out.println("Running.. this will take a while");
 		PlayerSkeleton pso = new PlayerSkeleton();
 		pso.run();
 	}
