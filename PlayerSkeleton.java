@@ -207,7 +207,7 @@ public class PlayerSkeleton {
 		}
 
 		public static double evaluate(double[] weights) {
-			GeneticAlgorithm player = new GeneticAlgorithm(new Context(new GeneralMove(weights)));
+			final GeneticAlgorithm player = new GeneticAlgorithm(new Context(new GeneralMove(weights)));
 
 		/*
 		List<CompletableFuture<Integer>> gametests = new ArrayList<>();
