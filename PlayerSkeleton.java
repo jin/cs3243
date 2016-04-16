@@ -231,26 +231,28 @@ public class PlayerSkeleton {
 		public static double evaluate(double[] weights) {
 			final PlayerSkeleton player = new PlayerSkeleton(new Context(new GeneralMove(weights)));
 			List<Callable<Integer>> gametests = new ArrayList<>();
+			double total = 0;
 			for (int i = 0; i < 10; i++) {
-				gametests.add(new Callable<Integer>() {
-					public Integer call() {
+				//gametests.add(new Callable<Integer>() {
+				//	public Integer call() {
 						State gameState = new State();
 						PlayerSkeleton.headlessRun(gameState, player);
-						return gameState.getRowsCleared();
-					}
-				});
-			}
-			try {
-				List<Future<Integer>> results = executor.invokeAll(gametests);
-				double total = 0;
-				for (Future<Integer> result : results) {
-					total += result.get();
-				}
-				return total / results.size();
-			} catch (InterruptedException | ExecutionException e) {
+				total += gameState.getRowsCleared();}
+				//		return gameState.getRowsCleared();
+			//		}
+			//	});
+			//}
+			//try {
+			//	List<Future<Integer>> results = executor.invokeAll(gametests);
+//				double total = 0;
+			//	for (Future<Integer> result : results) {
+//					total += result.get();
+				//}
+				return total / 10;//results.size();
+			/*} catch (InterruptedException | ExecutionException e) {
 				System.out.println("Thread exception encountered!");
 			}
-			return 0;
+			return 0;*/
 		}
 	}
 
@@ -464,10 +466,10 @@ public class PlayerSkeleton {
 
 		private double variationSquared(LookaheadState s) {
 			double total = 0;
-			for (int i = 0; i < State.ROWS; i++) total += s.getTop()[i];
-			double average = total / State.ROWS;
+			for (int i = 0; i < State.COLS; i++) total += s.getTop()[i];
+			double average = total / State.COLS;
 			double variation = 0;
-			for (int i = 0; i< State.ROWS; i++){
+			for (int i = 0; i < State.COLS; i++){
 				double currTop = average - s.getTop()[i];
 				variation += (average - currTop) * (average - currTop);
 			}
