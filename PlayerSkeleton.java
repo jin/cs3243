@@ -5,6 +5,10 @@ import java.util.Random;
 import java.util.concurrent.*;
 
 public class PlayerSkeleton {
+
+    // Most optimal weights so far
+    double[] BEST_PARTICLE = {9.11, -3.56, 4.15, -8.58, -0.60, 5.42, -6.65, 0.77, -3.52, -0.05, -7.60, -1.98, -1.81, -4.23, 4.34};
+
 	public static final Random randomGenerator = new Random();
 
 	// Swarm details
