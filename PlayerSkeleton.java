@@ -17,7 +17,7 @@ public class PlayerSkeleton {
 
 	// Swarm details
 
-	private static final int SWARM_SIZE = isDemo ? 20 : 100;
+	private static final int SWARM_SIZE = isDemo ? 1 : 100;
 	private static final int GENERATION_COUNT = 10000;
 
 	// Internal PSO parameters. Sort of a temperature control mechanism.
@@ -296,8 +296,8 @@ public class PlayerSkeleton {
 					holes(s),
 					completeLines(s, completedRows),
 					bumpiness(s),
-					s.getWalls(),
-					s.getVariation(),
+					walls(s),
+					variationSquared(s),
 					s.getTop()[0],
 					s.getTop()[1],
 					s.getTop()[2],
@@ -444,6 +444,34 @@ public class PlayerSkeleton {
 				}
 			}
 			return rows;
+		}
+
+		private int walls(LookaheadState s){
+			int total = 0;
+			for (int i = 1; i < State.COLS-1; i++ ) {
+				int left = s.getTop()[i - 1] - s.getTop()[i];
+				int right = s.getTop()[i + 1] - s.getTop()[i];
+				if ((left >= 2) && (right >= 2)) {
+					total += Math.min(left, right);
+				}
+			}
+			int col0 = s.getTop()[1] - s.getTop()[0];
+			int col10 = s.getTop()[State.COLS-2] - s.getTop()[State.COLS - 1];
+			if (col0 >= 2) total += col0;
+			if (col10 >= 2) total += col10;
+			return total;
+		}
+
+		private double variationSquared(LookaheadState s) {
+			double total = 0;
+			for (int i = 0; i < State.ROWS; i++) total += s.getTop()[i];
+			double average = total / State.ROWS;
+			double variation = 0;
+			for (int i = 0; i< State.ROWS; i++){
+				double currTop = average - s.getTop()[i];
+				variation += (average - currTop) * (average - currTop);
+			}
+			return variation;
 		}
 
 		/**
@@ -794,42 +822,6 @@ public class PlayerSkeleton {
 			label.filledRectangleLL(0, ROWS+.9, COLS, 4.2, TLabel.DEFAULT_CLEAR_COLOR);
 			label.line(0, 0, 0, ROWS+5);
 			label.line(COLS, 0, COLS, ROWS+5);
-		}
-
-		// More features
-		public double getVariation() {
-			double sum = 0;
-			double maximumHeight = 0;
-			double minimumHeight = 10;
-			double mean;
-			double variation;
-			for (int i = 0; i< 10; i++){
-				//featureFactor[i] = tmpState.getColumnHeight(i);
-				sum += top[i];
-				if (top[i] > maximumHeight){
-					maximumHeight = top[i];
-				}
-				if (top[i] < minimumHeight){
-					minimumHeight = top[i];
-				}
-			}
-			mean = sum / 10;
-			variation = 0;
-			for (int i = 0; i< 10; i++){
-				variation += (mean - top[i])*(mean - top[i]);
-			}
-			return variation;
-		}
-
-		public int getWalls(){
-			int result = 0;
-			for (int i = 1; i < COLS-1; i++ )
-				if ((top[i-1] - top[i] >= 2)&&(top[i+1] - top[i] >= 2))
-					result += Math.min(top[i-1] - top[i],top[i+1] - top[i]);
-			if (top[1] - top[0] >= 2) result += top[1] - top[0];
-			if (top[COLS-2] - top[COLS - 1] >= 2) result += top[COLS-2] - top[COLS - 1];
-			return result;
-
 		}
 
 		// For lookahead
