@@ -7,12 +7,13 @@ import java.util.concurrent.*;
 public class PlayerSkeleton {
 
     // Most optimal weights so far
-    double[] BEST_PARTICLE = {9.11, -3.56, 4.15, -8.58, -0.60, 5.42, -6.65, 0.77, -3.52, -0.05, -7.60, -1.98, -1.81, -4.23, 4.34};
+    static double[] BEST_PARTICLE = {9.11, -3.56, 4.15, -8.58, -0.60, 5.42, -6.65, 0.77, -3.52, -0.05, -7.60, -1.98, -1.81, -4.23, 4.34};
 
     // Set this to false to train the model
     // True if using Best Particle
     boolean isDemo = true;
-
+    boolean isExternalEvaluation = false;
+    GeneticAlgorithm externalAgent;
 	public static final Random randomGenerator = new Random();
 
 	// Swarm details
@@ -27,18 +28,53 @@ public class PlayerSkeleton {
 	public static final double C_G = 0.9; // How much weight we want to give global best.
 
 	private Particle[] swarm = new Particle[SWARM_SIZE];
-	
+
 	private double gBest = -1.0;
 	private double[] gBestLoc = new double[Particle.FEATURES_COUNT];
 
 	public static void main(String[] args) {
-        System.out.println("Running.. this will take a while");
-		PlayerSkeleton pso = new PlayerSkeleton();
-		pso.run();
+		if (args.length > 0 && args[0].length() > 0) {
+	        System.out.println("Running.. this will take a while");
+			PlayerSkeleton pso = new PlayerSkeleton(false);
+			pso.run();
+		} else {
+			State s = new State();
+			new TFrame(s);
+			PlayerSkeleton p = new PlayerSkeleton();
+
+			while(!s.hasLost()) {
+				s.makeMove(p.pickMove(s,s.legalMoves()));
+				s.draw();
+				s.drawNext(0,0);
+				try {
+					Thread.sleep(10);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			System.out.println("You have completed "+s.getRowsCleared()+" rows.");
+		}
 	}
 
 	public PlayerSkeleton() {
+		this(true);
+	}
+	public PlayerSkeleton(boolean isExternalEvaluation) {
+		if (isExternalEvaluation) {
+			this.isExternalEvaluation = true;
+			this.externalAgent = new GeneticAlgorithm(new Context(new GeneralMove(BEST_PARTICLE)));
+		}
 		randomizeSwarm();
+	}
+
+	public int pickMove(State s, int[][] legalMoves) {
+		if (isExternalEvaluation) {
+			return externalAgent.pickMove(s, legalMoves);
+		} else {
+			System.out.println("If you want to test the submission by calling pickMove externally, please instantiate using the default constructor");
+			System.exit(-1);
+			return 0;
+		}
 	}
 
 	public void run() {
