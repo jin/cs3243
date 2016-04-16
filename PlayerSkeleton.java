@@ -9,6 +9,10 @@ public class PlayerSkeleton {
     // Most optimal weights so far
     double[] BEST_PARTICLE = {9.11, -3.56, 4.15, -8.58, -0.60, 5.42, -6.65, 0.77, -3.52, -0.05, -7.60, -1.98, -1.81, -4.23, 4.34};
 
+    // Set this to false to train the model
+    // True if using Best Particle
+    boolean isDemo = true;
+
 	public static final Random randomGenerator = new Random();
 
 	// Swarm details
@@ -111,11 +115,14 @@ public class PlayerSkeleton {
 	*/
 	public Particle randomParticle() {
 		//double[] weights = new double[Particle.FEATURES_COUNT];
-		double[] weights = {6.70, -2.63, 6.81, -6.97, -0.44, 4.57, -6.10, -6.74, -6.38, -0.57, -10.00, -6.14, -2.87, -1.88, -1.64};
+		double[] weights = BEST_PARTICLE;
 		double[] velocity = new double[Particle.FEATURES_COUNT];
-		for (int i = 0; i < weights.length; i++) {
-			weights[i] = (randomGenerator.nextDouble() * (Particle.MAX_POS * 2)) - Particle.MAX_POS;
-		}
+        // Don't randomize the best particle for demo
+        if (!isDemo) {
+            for (int i = 0; i < weights.length; i++) {
+                weights[i] = (randomGenerator.nextDouble() * (Particle.MAX_POS * 2)) - Particle.MAX_POS;
+            }
+        }
 		for (int i = 0; i < velocity.length; i++) {
 			velocity[i] = (randomGenerator.nextDouble() * (Particle.MAX_V * 2)) - Particle.MAX_V;
 		}
